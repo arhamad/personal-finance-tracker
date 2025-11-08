@@ -1,41 +1,27 @@
 package finance.repositroy;
 
-import finance.model.Budget;
-import finance.model.Category;
 import finance.model.CategoryType;
 import finance.model.Transaction;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-public class FinanceRepository {
-    private final Map<Integer, Transaction> transactions = new HashMap<>();
+public class TransactionRepository {
+    private final Map<Integer, Transaction> transactions = new ConcurrentHashMap<>();
     private final AtomicInteger idCounter = new AtomicInteger(1);
 
-    private final Set<Category> categories = new HashSet<>();
-
-    public TransactionRepository() {
-        initializeDefaultCategories();
-    }
-
-    private void initializeDefaultCategories() {
-        addCategory(new Category("Salary", CategoryType.INCOME));
-        addCategory(new Category("Investment", CategoryType.INCOME));
-        addCategory(new Category("Food", CategoryType.EXPENSE));
-        addCategory(new Category("Transport", CategoryType.EXPENSE));
-        addCategory(new Category("Entertainment", CategoryType.EXPENSE));
-        addCategory(new Category("Utilities", CategoryType.EXPENSE));
-    }
-
-    public Transaction addTransaction(double amount, Category category, String description) {
+    public Transaction addTransaction(double amount, finance.model.Category category, String description) {
         int id = idCounter.getAndIncrement();
         Transaction transaction = new Transaction(id, amount, category, description, null);
         transactions.put(id, transaction);
         return transaction;
     }
 
-    public boolean updateTransaction(int id, Double amount, Category category, String description) {
+    public boolean updateTransaction(int id, Double amount, finance.model.Category category, String description) {
         Transaction existing = transactions.get(id);
         if (existing != null) {
             Transaction updated = new Transaction(existing, amount, category, description);
@@ -56,40 +42,28 @@ public class FinanceRepository {
     public List<Transaction> getAllTransactions() {
         return transactions.values().stream()
                 .sorted(Comparator.comparing(Transaction::getDate).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<Transaction> getTransactionsByCategory(String categoryName) {
         return transactions.values().stream()
                 .filter(t -> t.getCategory().getName().equalsIgnoreCase(categoryName))
                 .sorted(Comparator.comparing(Transaction::getDate).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<Transaction> getTransactionsByType(CategoryType type) {
         return transactions.values().stream()
                 .filter(t -> t.getCategory().getType() == type)
                 .sorted(Comparator.comparing(Transaction::getDate).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public void addCategory(Category category) {
-        categories.add(category);
+    public boolean transactionExists(int id) {
+        return transactions.containsKey(id);
     }
 
-    public Optional<Category> getCategory(String name) {
-        return categories.stream()
-                .filter(c -> c.getName().equalsIgnoreCase(name))
-                .findFirst();
-    }
-
-    public List<Category> getAllCategories() {
-        return new ArrayList<>(categories);
-    }
-
-    public List<Category> getCategoriesByType(CategoryType type) {
-        return categories.stream()
-                .filter(c -> c.getType() == type)
-                .collect(Collectors.toList());
+    public int getTransactionCount() {
+        return transactions.size();
     }
 }
